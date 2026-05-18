@@ -676,6 +676,44 @@
   }
 
   /* ---------- Timer cards (multi-timer) ---------- */
+  .unit-seg {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    background: var(--surface-2);
+    flex-shrink: 0;
+  }
+  .unit-seg button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 34px;
+    height: 32px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: background 0.15s, color 0.15s;
+  }
+  .unit-seg button:active { transform: scale(0.95); }
+  .unit-seg button.active {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+  .interval-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+    margin-top: 8px;
+  }
+  .interval-row .input { flex: 1; min-width: 0; }
   .timer-list {
     display: flex;
     flex-direction: column;
@@ -1326,9 +1364,13 @@
       <button class="preset" type="button" data-sec="60">1m</button>
       <button class="preset" type="button" data-sec="300">5m</button>
     </div>
-    <div class="input-with-suffix" style="margin-top:8px">
-      <input class="input" type="number" id="timer-interval-input" min="1" placeholder="custom seconds">
-      <span class="suffix">sec</span>
+    <div class="interval-row">
+      <input class="input" type="number" id="timer-interval-input" step="any" min="0" placeholder="custom value">
+      <div class="unit-seg" id="timer-unit-seg">
+        <button type="button" data-unit="s">s</button>
+        <button type="button" data-unit="m">m</button>
+        <button type="button" data-unit="h">h</button>
+      </div>
     </div>
   </div>
 
@@ -1676,56 +1718,89 @@ function renderTimerSettings() {
 
 /* Timer edit sheet */
 let editingTimerId = null;
-let pickedInterval = 30;
+let pickedUnit = 's';
+const UNIT_MUL = { s: 1, m: 60, h: 3600 };
+
+function pickedSeconds() {
+  const v = parseFloat(document.getElementById('timer-interval-input').value);
+  if (!isFinite(v)) return NaN;
+  return v * UNIT_MUL[pickedUnit];
+}
+
+function intervalToUnitAndValue(sec) {
+  if (sec >= 3600 && sec % 3600 === 0) return { unit: 'h', value: sec / 3600 };
+  if (sec >= 60   && sec % 60   === 0) return { unit: 'm', value: sec / 60 };
+  return { unit: 's', value: sec };
+}
 
 function openTimerSheet(id) {
   editingTimerId = id || null;
+  let unit, value;
   if (id) {
     const t = state.timers.find(x => x.id === id);
     document.getElementById('timer-sheet-title').textContent = 'Edit timer';
     document.getElementById('timer-name').value = t.label || '';
-    pickedInterval = t.interval;
+    ({ unit, value } = intervalToUnitAndValue(t.interval));
     document.getElementById('timer-delete').style.display = 'inline-block';
   } else {
     document.getElementById('timer-sheet-title').textContent = 'New timer';
     document.getElementById('timer-name').value = '';
-    pickedInterval = 30;
+    unit = 's'; value = 30;
     document.getElementById('timer-delete').style.display = 'none';
   }
-  document.getElementById('timer-interval-input').value = pickedInterval;
+  pickedUnit = unit;
+  document.getElementById('timer-interval-input').value = value;
+  refreshUnitSeg();
   refreshTimerPresets();
   openSheet('sheet-timer');
   setTimeout(() => document.getElementById('timer-name').focus(), 280);
 }
 
+function refreshUnitSeg() {
+  document.querySelectorAll('#timer-unit-seg button').forEach(b => {
+    b.classList.toggle('active', b.dataset.unit === pickedUnit);
+  });
+}
+
 function refreshTimerPresets() {
+  const sec = pickedSeconds();
   document.querySelectorAll('#timer-preset-row .preset').forEach(p => {
-    p.classList.toggle('active', +p.dataset.sec === +pickedInterval);
+    p.classList.toggle('active', isFinite(sec) && +p.dataset.sec === sec);
   });
 }
 
 document.querySelectorAll('#timer-preset-row .preset').forEach(p => {
   p.onclick = () => {
-    pickedInterval = +p.dataset.sec;
-    document.getElementById('timer-interval-input').value = pickedInterval;
+    const sec = +p.dataset.sec;
+    const { unit, value } = intervalToUnitAndValue(sec);
+    pickedUnit = unit;
+    document.getElementById('timer-interval-input').value = value;
+    refreshUnitSeg();
     refreshTimerPresets();
   };
 });
-document.getElementById('timer-interval-input').addEventListener('input', e => {
-  const v = parseInt(e.target.value);
-  if (v >= 1) { pickedInterval = v; refreshTimerPresets(); }
+
+document.querySelectorAll('#timer-unit-seg button').forEach(b => {
+  b.onclick = () => {
+    pickedUnit = b.dataset.unit;
+    refreshUnitSeg();
+    refreshTimerPresets();
+  };
 });
+
+document.getElementById('timer-interval-input').addEventListener('input', refreshTimerPresets);
 
 document.getElementById('timer-cancel').onclick = closeSheet;
 document.getElementById('timer-save').onclick = () => {
   const label = document.getElementById('timer-name').value.trim();
-  const interval = Math.max(1, parseInt(pickedInterval) || 30);
+  const sec = pickedSeconds();
+  if (!isFinite(sec) || sec <= 0) return;
+  const interval = Math.max(1, Math.round(sec));
   if (editingTimerId) {
     const t = state.timers.find(x => x.id === editingTimerId);
     const wasRunning = t.running;
     t.label = label;
     t.interval = interval;
-    // If interval changed while running, restart cycle so countdown is correct
     if (wasRunning) { t.startTime = Date.now(); t.fired = 0; }
   } else {
     state.timers.push({
