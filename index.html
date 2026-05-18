@@ -1,0 +1,2556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#faf9f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0e0d" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Trio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf9f6;
+    --surface: #ffffff;
+    --surface-2: #f2f0ea;
+    --text: #141413;
+    --text-muted: #7a7872;
+    --border: #e7e4dc;
+    --border-strong: #d4d1c7;
+    --accent: #141413;
+    --accent-fg: #faf9f6;
+    --danger: #c4503f;
+    --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.04);
+    --shadow-md: 0 2px 8px rgba(20, 20, 19, 0.06), 0 1px 2px rgba(20, 20, 19, 0.04);
+    --shadow-lg: 0 8px 24px rgba(20, 20, 19, 0.08), 0 2px 6px rgba(20, 20, 19, 0.04);
+
+    --prio-high: #c4503f;
+    --prio-med:  #d99641;
+    --prio-low:  #6e9c8a;
+    --prio-none: #a8a59c;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+  }
+  [data-theme="dark"] {
+    --bg: #0e0e0d;
+    --surface: #18181a; /*was #18*/
+    --surface-2: #222220;
+    --text: #f3f1ea;
+    --text-muted: #888578;
+    --border: #2a2a27;
+    --border-strong: #3a3a36;
+    --accent: #f3f1ea;
+    --accent-fg: #141413;
+    --danger: #e87968;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+    --prio-high: #e07566;
+    --prio-med:  #e6a85e;
+    --prio-low:  #87b6a3;
+    --prio-none: #6a6862;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.25s ease, color 0.25s ease;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  input, textarea { user-select: text; -webkit-user-select: text; }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 520px;
+    margin: 0 auto;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* ---------- Header ---------- */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: max(env(safe-area-inset-top), 16px) 20px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    z-index: 5;
+  }
+  .brand {
+    font-family: 'Instrument Serif', serif;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+    font-style: italic;
+    line-height: 1;
+  }
+  .brand-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin-left: 4px;
+    vertical-align: middle;
+    margin-bottom: 4px;
+  }
+  .icon-btn {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  }
+  .icon-btn:active { transform: scale(0.94); }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  /* ---------- Main / Views ---------- */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .view {
+    display: none;
+    padding: 24px 20px calc(96px + env(safe-area-inset-bottom));
+    animation: fadeIn 0.25s ease;
+  }
+  .view.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .view-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 42px;
+    line-height: 1;
+    margin: 0 0 4px;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+  }
+  .view-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin: 0 0 28px;
+  }
+
+  /* ---------- Tab bar ---------- */
+  .tabbar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    z-index: 10;
+  }
+  .tabbar button {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 8px 2px;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.18s;
+    border-radius: 12px;
+  }
+  .tabbar button svg { width: 20px; height: 20px; }
+  .tabbar button.active { color: var(--text); }
+  .tabbar button.active svg { stroke-width: 2; }
+
+  /* ---------- Timer ---------- */
+  .timer-display {
+    margin: 24px 0 32px;
+    text-align: center;
+  }
+  .timer-big {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 96px;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-top: 6px;
+    height: 20px;
+  }
+  .timer-count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 6px 12px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .timer-count b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .preset-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .preset {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 4px;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset:active { transform: scale(0.97); }
+  .preset.active {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .field-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .input, .textarea {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: 15px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .input:focus, .textarea:focus {
+    outline: none;
+    border-color: var(--border-strong);
+  }
+  .textarea { resize: vertical; min-height: 72px; }
+
+  .input-with-suffix {
+    position: relative;
+  }
+  .input-with-suffix .suffix {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .btn-primary {
+    appearance: none;
+    width: 100%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    padding: 16px;
+    border-radius: var(--radius-lg);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: transform 0.1s, opacity 0.15s;
+  }
+  .btn-primary:active { transform: scale(0.985); }
+  .btn-primary.running { background: var(--danger); color: #fff; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-row .lbl { font-size: 14px; }
+  .toggle-row .sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .switch {
+    position: relative;
+    width: 42px; height: 24px;
+    background: var(--surface-2);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .switch.on { background: var(--accent); }
+  .switch.on::after {
+    transform: translateX(18px);
+    background: var(--accent-fg);
+    border-color: var(--accent-fg);
+  }
+
+  .section-divider {
+    margin: 24px 0 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  /* ---------- Calculator ---------- */
+  .calc-history {
+    background: var(--surface-2);
+    border-radius: var(--radius-lg);
+    padding: 10px 14px;
+    max-height: 160px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+  }
+  .calc-history-empty {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-style: italic;
+    text-align: center;
+    margin: auto;
+    font-family: 'Instrument Serif', serif;
+    font-size: 16px;
+  }
+  .calc-history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .calc-history-head span {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .calc-history-head button {
+    appearance: none;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+  .calc-history-list { display: flex; flex-direction: column; gap: 2px; }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    gap: 12px;
+  }
+  .history-item:active { background: rgba(127,127,127,0.1); }
+  .history-expr {
+    font-size: 13px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .history-result {
+    font-family: 'Instrument Serif', serif;
+    font-size: 17px;
+    font-style: italic;
+    flex-shrink: 0;
+  }
+
+  .calc-display {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 18px;
+    text-align: right;
+    margin-bottom: 16px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .calc-expr {
+    font-size: 14px;
+    color: var(--text-muted);
+    min-height: 18px;
+    font-variant-numeric: tabular-nums;
+    word-wrap: break-word;
+  }
+  .calc-result {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 44px;
+    line-height: 1.05;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .key {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0;
+    aspect-ratio: 1.3 / 1;
+    border-radius: var(--radius-md);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.08s, background 0.1s;
+    font-variant-numeric: tabular-nums;
+  }
+  .key:active { transform: scale(0.96); background: var(--surface-2); }
+  .key.op { color: var(--text-muted); font-size: 24px; }
+  .key.fn { background: var(--surface-2); color: var(--text-muted); font-size: 16px; }
+  .key.eq {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+  }
+
+  /* ---------- Tasks ---------- */
+  .group-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .group-bar::-webkit-scrollbar { display: none; }
+  .group-chip {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  .group-chip.active {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border-color: var(--accent);
+  }
+  .group-chip .count {
+    font-size: 11px;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+  }
+  .group-chip.add { color: var(--text-muted); }
+
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 200px;
+  }
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    touch-action: pan-y;
+    transition: box-shadow 0.15s, transform 0.15s ease;
+    position: relative;
+  }
+  .task-item.dragging {
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+    cursor: grabbing;
+    border-color: var(--border-strong);
+  }
+  .task-item.dragging * { pointer-events: none; }
+  .task-item.placeholder {
+    opacity: 0;
+  }
+  .prio-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 7px;
+    background: var(--prio);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--prio) 18%, transparent);
+  }
+  .task-body { flex: 1; min-width: 0; }
+  .task-name {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.3;
+    word-wrap: break-word;
+  }
+  .task-name.done {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+  .task-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+  .task-check {
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--border-strong);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .task-check.done {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .task-check.done svg { color: var(--accent-fg); }
+  .task-check svg { width: 12px; height: 12px; opacity: 0; transition: opacity 0.15s; }
+  .task-check.done svg { opacity: 1; }
+  .drag-handle {
+    color: var(--text-muted);
+    cursor: grab;
+    padding: 4px 2px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    touch-action: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .drag-handle svg { width: 16px; height: 16px; display: block; }
+
+  /* ---------- Vehicles ---------- */
+  .vehicle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .vehicle-item {
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .vehicle-item:active { transform: scale(0.99); border-color: var(--border-strong); }
+  .vehicle-glyph {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .vehicle-glyph svg { width: 20px; height: 20px; }
+  .vehicle-body { flex: 1; min-width: 0; }
+  .vehicle-name {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 20px;
+    line-height: 1.1;
+    word-wrap: break-word;
+    margin-bottom: 4px;
+  }
+  .vehicle-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .vehicle-meta span em {
+    font-style: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 10px;
+    margin-right: 5px;
+    opacity: 0.75;
+  }
+
+  /* ---------- Timer cards (multi-timer) ---------- */
+  .timer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+    min-height: 80px;
+  }
+  .timer-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px 14px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .timer-card.running {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 6%, transparent), var(--shadow-sm);
+  }
+  .timer-toggle {
+    appearance: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-fg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .timer-toggle:active { transform: scale(0.92); }
+  .timer-toggle.running {
+    background: var(--danger);
+    color: #fff;
+  }
+  .timer-toggle svg { width: 18px; height: 18px; }
+  .timer-toggle .play-icon { margin-left: 2px; }
+  .timer-card-body {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+  .timer-card-name {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.2;
+    word-wrap: break-word;
+  }
+  .timer-card.running .timer-card-name {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 20px;
+    font-weight: 400;
+  }
+  .timer-card-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .timer-card.running .timer-card-sub {
+    color: var(--text);
+  }
+
+  /* ---------- Notes ---------- */
+  .note-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .note-item {
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.15s;
+  }
+  .note-item:active { transform: scale(0.99); border-color: var(--border-strong); }
+  .note-heading {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1.15;
+    margin-bottom: 6px;
+    word-wrap: break-word;
+  }
+  .note-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .note-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+  }
+
+  /* ---------- Header right cluster ---------- */
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* ---------- Settings sheet bits ---------- */
+  .settings-hint {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0 0 16px;
+  }
+  .settings-section-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 8px 0 8px;
+    font-weight: 500;
+  }
+
+  /* ---------- Misc ---------- */
+
+  /* ---------- Altitude Calculator ---------- */
+  .alt-result {
+    margin-top: 28px;
+    padding: 36px 20px 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .alt-result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .alt-result-value {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 72px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .alt-result-unit {
+    font-family: 'Instrument Sans', sans-serif;
+    font-style: normal;
+    font-size: 22px;
+    color: var(--text-muted);
+    margin-left: 4px;
+    letter-spacing: 0;
+  }
+  .alt-result-formula {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .title {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .fab {
+    position: fixed;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    right: max(20px, calc((100% - 520px)/2 + 20px));
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: none;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 8;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.94); }
+  .fab svg { width: 22px; height: 22px; }
+
+  /* ---------- Modal / Sheet ---------- */
+  .scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+
+  .sheet {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 100%);
+    width: 100%;
+    max-width: 520px;
+    background: var(--bg);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    z-index: 30;
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    padding: 12px 20px calc(24px + env(safe-area-inset-bottom));
+    max-height: 92dvh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+  }
+  .sheet.open { transform: translate(-50%, 0); }
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border-strong);
+    border-radius: 2px;
+    margin: 4px auto 16px;
+  }
+  .sheet-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    font-style: italic;
+    margin: 0 0 18px;
+    line-height: 1;
+  }
+
+  .prio-picker {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .prio-option {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+  .prio-option .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--prio);
+  }
+  .prio-option.active {
+    border-color: var(--prio);
+    background: color-mix(in srgb, var(--prio) 12%, var(--surface));
+    color: var(--text);
+  }
+
+  .sheet-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .btn-secondary {
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px;
+    border-radius: var(--radius-lg);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-secondary.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 30%, var(--border)); }
+  .btn-primary.in-sheet { margin-top: 0; }
+
+  .group-list-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-list-row:last-child { border-bottom: none; }
+  .group-list-row input { flex: 1; }
+  .group-list-row button {
+    appearance: none;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="app-header">
+    <div class="brand">Trio<span class="brand-dot"></span></div>
+    <div class="header-actions">
+      <button class="icon-btn" id="settings-btn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle theme">
+        <svg id="icon-theme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============== TIMER VIEW ============== -->
+    <section class="view active" id="view-timer">
+      <h1 class="view-title">Timers<span style="font-style:italic; color: var(--text-muted)">.</span></h1>
+      <p class="view-sub">Recurring reminders. Tap + to add one.</p>
+
+      <div class="timer-list" id="timer-list"></div>
+
+      <div class="section-divider">Notify with</div>
+      <div class="toggle-row">
+        <div>
+          <div class="lbl">Sound</div>
+          <div class="sub">Short tone</div>
+        </div>
+        <div class="switch on" id="opt-sound"></div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="lbl">Vibration</div>
+          <div class="sub">Mobile devices only</div>
+        </div>
+        <div class="switch on" id="opt-vibrate"></div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="lbl">System notification</div>
+          <div class="sub" id="notif-status">Requires permission</div>
+        </div>
+        <div class="switch" id="opt-notify"></div>
+      </div>
+    </section>
+
+    <!-- ============== CALCULATOR VIEW ============== -->
+    <section class="view" id="view-calc">
+      <h1 class="view-title">Calculator<span style="font-style:italic; color: var(--text-muted)">.</span></h1>
+      <p class="view-sub">Tap history to re-use a result.</p>
+
+      <div class="calc-history" id="calc-history">
+        <div class="calc-history-empty" id="calc-history-empty">no history yet</div>
+        <div class="calc-history-head" id="calc-history-head" style="display:none">
+          <span>History</span>
+          <button id="clear-history">Clear</button>
+        </div>
+        <div class="calc-history-list" id="calc-history-list"></div>
+      </div>
+
+      <div class="calc-display">
+        <div class="calc-expr" id="calc-expr">&nbsp;</div>
+        <div class="calc-result" id="calc-result">0</div>
+      </div>
+
+      <div class="calc-grid" id="calc-grid">
+        <button class="key fn" data-k="C">AC</button>
+        <button class="key fn" data-k="±">±</button>
+        <button class="key fn" data-k="%">%</button>
+        <button class="key op" data-k="÷">÷</button>
+        <button class="key" data-k="7">7</button>
+        <button class="key" data-k="8">8</button>
+        <button class="key" data-k="9">9</button>
+        <button class="key op" data-k="×">×</button>
+        <button class="key" data-k="4">4</button>
+        <button class="key" data-k="5">5</button>
+        <button class="key" data-k="6">6</button>
+        <button class="key op" data-k="−">−</button>
+        <button class="key" data-k="1">1</button>
+        <button class="key" data-k="2">2</button>
+        <button class="key" data-k="3">3</button>
+        <button class="key op" data-k="+">+</button>
+        <button class="key fn" data-k="⌫">⌫</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key" data-k=".">.</button>
+        <button class="key eq" data-k="=">=</button>
+      </div>
+    </section>
+
+    <!-- ============== TASKS VIEW ============== -->
+    <section class="view" id="view-tasks">
+      <h1 class="view-title">Tasks<span style="font-style:italic; color: var(--text-muted)">.</span></h1>
+      <p class="view-sub">Drag the handle to reorder. Tap a task to edit.</p>
+
+      <div class="group-bar" id="group-bar"></div>
+      <div class="task-list" id="task-list"></div>
+    </section>
+
+    <!-- ============== NOTES VIEW ============== -->
+    <section class="view" id="view-notes">
+      <h1 class="view-title">Notes<span style="font-style:italic; color: var(--text-muted)">.</span></h1>
+      <p class="view-sub">Flight observations and debrief.</p>
+
+      <div class="note-list" id="note-list"></div>
+    </section>
+
+    <!-- ============== VEHICLES VIEW ============== -->
+    <section class="view" id="view-vehicles">
+      <h1 class="view-title">Vehicles<span style="font-style:italic; color: var(--text-muted)">.</span></h1>
+      <p class="view-sub">MAVLink ID, board number, SineLink name.</p>
+
+      <div class="vehicle-list" id="vehicle-list"></div>
+    </section>
+
+    <!-- ============== ALTITUDE VIEW ============== -->
+    <section class="view" id="view-altitude">
+      <h1 class="view-title">Altitude<span style="font-style:italic; color: var(--text-muted)">.</span></h1>
+      <p class="view-sub">Mission altitude from telemetry.</p>
+
+      <div class="field">
+        <label class="field-label">Telemetry alt · AMSL</label>
+        <div class="input-with-suffix">
+          <input class="input" id="alt-telemetry" inputmode="decimal" placeholder="current altitude above sea level">
+          <span class="suffix">m</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Target alt · MSL</label>
+        <div class="input-with-suffix">
+          <input class="input" id="alt-target" inputmode="decimal" placeholder="desired altitude above sea level">
+          <span class="suffix">m</span>
+        </div>
+      </div>
+
+      <div class="alt-result">
+        <div class="alt-result-label">Mission Altitude</div>
+        <div class="alt-result-value">
+          <span id="alt-result-num">—</span><span class="alt-result-unit" id="alt-result-unit"></span>
+        </div>
+        <div class="alt-result-formula">Target MSL + Telemetry AMSL</div>
+      </div>
+    </section>
+
+  </main>
+
+  <button class="fab" id="fab" style="display:none" aria-label="Add task">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <nav class="tabbar">
+    <button data-view="timer" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6M12 5V2"/>
+      </svg>
+      Timer
+    </button>
+    <button data-view="calc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16v.01"/>
+      </svg>
+      Calc
+    </button>
+    <button data-view="tasks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>
+      </svg>
+      Tasks
+    </button>
+    <button data-view="notes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <path d="M14 2v6h6M8 13h6M8 17h8"/>
+      </svg>
+      Notes
+    </button>
+    <button data-view="vehicles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="2.5"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+        <path d="M6.5 6.5 10 10M17.5 6.5 14 10M6.5 17.5 10 14M17.5 17.5 14 14"/>
+      </svg>
+      Vehicles
+    </button>
+    <button data-view="altitude">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/>
+        <path d="M12 18V5"/>
+        <path d="m7 10 5-5 5 5"/>
+      </svg>
+      Altitude
+    </button>
+  </nav>
+</div>
+
+<!-- Sheets -->
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sheet-task">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title" id="task-sheet-title">New task</h2>
+
+  <div class="field">
+    <label class="field-label">Name</label>
+    <input class="input" id="task-name" placeholder="What needs doing?">
+  </div>
+  <div class="field">
+    <label class="field-label">Description</label>
+    <textarea class="textarea" id="task-desc" placeholder="Notes, links, context…"></textarea>
+  </div>
+  <div class="field">
+    <label class="field-label">Priority</label>
+    <div class="prio-picker" id="prio-picker">
+      <button class="prio-option" data-prio="high" style="--prio: var(--prio-high)"><span class="dot"></span>High</button>
+      <button class="prio-option" data-prio="med"  style="--prio: var(--prio-med)"><span class="dot"></span>Medium</button>
+      <button class="prio-option" data-prio="low"  style="--prio: var(--prio-low)"><span class="dot"></span>Low</button>
+      <button class="prio-option" data-prio="none" style="--prio: var(--prio-none)"><span class="dot"></span>None</button>
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Group</label>
+    <select class="input" id="task-group"></select>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn-secondary danger" id="task-delete" style="display:none">Delete</button>
+    <button class="btn-secondary" id="task-cancel">Cancel</button>
+    <button class="btn-primary in-sheet" id="task-save" style="grid-column: span 2;">Save task</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-group">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title">Groups</h2>
+
+  <div id="group-list"></div>
+
+  <div class="field" style="margin-top: 16px">
+    <label class="field-label">Add new group</label>
+    <div style="display:flex; gap:8px">
+      <input class="input" id="new-group-name" placeholder="e.g. Work, Errands">
+      <button class="btn-secondary" id="add-group" style="width:auto; padding: 12px 16px">Add</button>
+    </div>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn-primary in-sheet" id="group-done" style="grid-column: span 2;">Done</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-vehicle">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title" id="vehicle-sheet-title">New vehicle</h2>
+
+  <div class="field">
+    <label class="field-label">SineLink name</label>
+    <input class="input" id="vehicle-name" placeholder="Display name">
+  </div>
+  <div class="field">
+    <label class="field-label">MAVLink ID</label>
+    <input class="input" id="vehicle-mavid" placeholder="1–255" inputmode="numeric">
+  </div>
+  <div class="field">
+    <label class="field-label">Board number</label>
+    <input class="input" id="vehicle-board" placeholder="Serial / board no.">
+  </div>
+  <div class="field">
+    <label class="field-label">Video frequency</label>
+    <input class="input" id="vehicle-video" placeholder="e.g. 5800 MHz · 5.8 GHz · CH4">
+  </div>
+  <div class="field">
+    <label class="field-label">Marshal timer · <span style="color:var(--text-muted);text-transform:none;letter-spacing:0">optional</span></label>
+    <div class="input-with-suffix">
+      <input class="input" id="vehicle-marshal" inputmode="numeric" placeholder="seconds">
+      <span class="suffix">sec</span>
+    </div>
+  </div>
+  <div class="field">
+    <label class="field-label">Altitude · <span style="color:var(--text-muted);text-transform:none;letter-spacing:0">optional</span></label>
+    <div class="input-with-suffix">
+      <input class="input" id="vehicle-alt" inputmode="decimal" placeholder="meters">
+      <span class="suffix">m</span>
+    </div>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn-secondary danger" id="vehicle-delete" style="display:none">Delete</button>
+    <button class="btn-secondary" id="vehicle-cancel">Cancel</button>
+    <button class="btn-primary in-sheet" id="vehicle-save" style="grid-column: span 2;">Save vehicle</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-timer">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title" id="timer-sheet-title">New timer</h2>
+
+  <div class="field">
+    <label class="field-label">Label</label>
+    <input class="input" id="timer-name" placeholder="Marshal check, drink water, hover test...">
+  </div>
+  <div class="field">
+    <label class="field-label">Interval</label>
+    <div class="preset-row" id="timer-preset-row">
+      <button class="preset" type="button" data-sec="15">15s</button>
+      <button class="preset" type="button" data-sec="30">30s</button>
+      <button class="preset" type="button" data-sec="60">1m</button>
+      <button class="preset" type="button" data-sec="300">5m</button>
+    </div>
+    <div class="input-with-suffix" style="margin-top:8px">
+      <input class="input" type="number" id="timer-interval-input" min="1" placeholder="custom seconds">
+      <span class="suffix">sec</span>
+    </div>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn-secondary danger" id="timer-delete" style="display:none">Delete</button>
+    <button class="btn-secondary" id="timer-cancel">Cancel</button>
+    <button class="btn-primary in-sheet" id="timer-save" style="grid-column: span 2;">Save timer</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-note">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title" id="note-sheet-title">New note</h2>
+
+  <div class="field">
+    <label class="field-label">Heading</label>
+    <input class="input" id="note-heading" placeholder="Title of this note">
+  </div>
+  <div class="field">
+    <label class="field-label">Description</label>
+    <textarea class="textarea" id="note-desc" placeholder="What happened, what to fix, what to remember…" style="min-height: 220px"></textarea>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="btn-secondary danger" id="note-delete" style="display:none">Delete</button>
+    <button class="btn-secondary" id="note-cancel">Cancel</button>
+    <button class="btn-primary in-sheet" id="note-save" style="grid-column: span 2;">Save note</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-settings">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title">Data</h2>
+
+  <p class="settings-hint">Back up or transfer your data. Includes timers, tasks, groups, vehicles, notes, and calculator history.</p>
+
+  <div class="sheet-actions" style="grid-template-columns: 1fr 1fr">
+    <button class="btn-secondary" id="export-btn">Export JSON</button>
+    <button class="btn-secondary" id="import-btn">Import JSON</button>
+  </div>
+  <input type="file" id="import-file" accept="application/json,.json" style="display:none">
+
+  <div class="sheet-actions" style="margin-top: 12px">
+    <button class="btn-primary in-sheet" id="settings-done" style="grid-column: span 2;">Done</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   STATE & STORAGE
+   ========================================================================= */
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+
+const _newId = p => p + '_' + Math.random().toString(36).slice(2, 10);
+
+/* Migrate old single-timer schema (trio.timer) → new multi-timer schema (trio.timers + trio.timerSettings) */
+(function migrate() {
+  const oldTimer = LS.get('trio.timer', null);
+  if (oldTimer && LS.get('trio.timers', null) === null) {
+    LS.set('trio.timers', [{
+      id: _newId('tm'),
+      label: oldTimer.label || 'Reminder',
+      interval: oldTimer.interval || 30,
+      running: false,
+      fired: 0,
+      startTime: 0
+    }]);
+    LS.set('trio.timerSettings', {
+      sound:   oldTimer.sound   ?? true,
+      vibrate: oldTimer.vibrate ?? true,
+      notify:  oldTimer.notify  ?? false
+    });
+  }
+})();
+
+const DRONE_GROUPS = [
+  { id: 'g_preflight',   name: 'Pre-flight' },
+  { id: 'g_afterflight', name: 'After-flight' },
+  { id: 'g_future',      name: 'Future Work' },
+  { id: 'g_reflect',     name: 'To Reflect On' }
+];
+
+const state = {
+  theme: LS.get('trio.theme', null),
+  timers: LS.get('trio.timers', [
+    { id: _newId('tm'), label: 'Marshal check', interval: 60, running: false, fired: 0, startTime: 0 }
+  ]),
+  timerSettings: LS.get('trio.timerSettings', { sound: true, vibrate: true, notify: false }),
+  calcHistory: LS.get('trio.calcHistory', []),
+  groups: LS.get('trio.groups', DRONE_GROUPS),
+  tasks: LS.get('trio.tasks', []),
+  activeGroup: LS.get('trio.activeGroup', 'g_preflight'),
+  vehicles: LS.get('trio.vehicles', []),
+  notes: LS.get('trio.notes', []),
+};
+
+// Always ensure running timers are paused on load (don't auto-resume across page loads)
+state.timers.forEach(t => { t.running = false; t.fired = 0; t.startTime = 0; });
+
+function persist() {
+  LS.set('trio.timers', state.timers);
+  LS.set('trio.timerSettings', state.timerSettings);
+  LS.set('trio.calcHistory', state.calcHistory);
+  LS.set('trio.groups', state.groups);
+  LS.set('trio.tasks', state.tasks);
+  LS.set('trio.activeGroup', state.activeGroup);
+  LS.set('trio.vehicles', state.vehicles);
+  LS.set('trio.notes', state.notes);
+  if (state.theme) LS.set('trio.theme', state.theme);
+}
+
+/* =========================================================================
+   THEME
+   ========================================================================= */
+const ICON_SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+const ICON_MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+
+function applyTheme() {
+  const sys = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  const t = state.theme || sys;
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('icon-theme').innerHTML = t === 'dark' ? ICON_SUN : ICON_MOON;
+  // Update theme-color meta
+  const c = getComputedStyle(document.body).backgroundColor;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', c));
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!state.theme) applyTheme(); });
+document.getElementById('theme-toggle').onclick = () => {
+  const current = state.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  state.theme = current === 'dark' ? 'light' : 'dark';
+  persist();
+  applyTheme();
+};
+
+/* =========================================================================
+   TAB SWITCHING
+   ========================================================================= */
+const views = { timer: 'view-timer', calc: 'view-calc', tasks: 'view-tasks', notes: 'view-notes', vehicles: 'view-vehicles', altitude: 'view-altitude' };
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(views[name]).classList.add('active');
+  document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  const fabViews = ['timer', 'tasks', 'notes', 'vehicles'];
+  document.getElementById('fab').style.display = fabViews.includes(name) ? 'flex' : 'none';
+  document.querySelector('main').scrollTop = 0;
+}
+document.querySelectorAll('.tabbar button').forEach(b => {
+  b.onclick = () => switchView(b.dataset.view);
+});
+
+/* =========================================================================
+   TIMERS (multi)
+   ========================================================================= */
+let masterTick = null;
+let audioCtx = null;
+
+function fmt(sec) {
+  const s = Math.max(0, Math.round(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+}
+
+function formatDuration(sec) {
+  sec = +sec || 0;
+  if (sec >= 3600 && sec % 3600 === 0) return (sec/3600) + 'h';
+  if (sec >= 60 && sec % 60 === 0)     return (sec/60) + 'm';
+  return sec + 's';
+}
+
+function updateNotifStatus() {
+  const el = document.getElementById('notif-status');
+  if (!el) return;
+  if (!('Notification' in window)) { el.textContent = 'Not supported'; return; }
+  const p = Notification.permission;
+  if (p === 'granted') el.textContent = 'Permission granted';
+  else if (p === 'denied') el.textContent = 'Permission blocked';
+  else el.textContent = 'Tap to request permission';
+}
+
+function beep() {
+  if (!state.timerSettings.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.value = 660;
+    o.type = 'sine';
+    g.gain.setValueAtTime(0, audioCtx.currentTime);
+    g.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+    o.start();
+    o.stop(audioCtx.currentTime + 0.35);
+  } catch {}
+}
+
+function fireReminderFor(t) {
+  beep();
+  if (state.timerSettings.vibrate && 'vibrate' in navigator) navigator.vibrate([80, 60, 80]);
+  if (state.timerSettings.notify && 'Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('Trio', { body: t.label || `Reminder #${t.fired}`, silent: true }); } catch {}
+  }
+  // Pulse the timer card
+  const card = document.querySelector(`[data-timer-id="${t.id}"]`);
+  if (card) {
+    card.style.transition = 'transform 0.15s';
+    card.style.transform = 'scale(1.015)';
+    setTimeout(() => { card.style.transform = ''; }, 180);
+  }
+}
+
+function ensureMasterTick() {
+  if (masterTick) return;
+  masterTick = setInterval(masterTickFn, 200);
+}
+function maybeStopMasterTick() {
+  if (masterTick && !state.timers.some(t => t.running)) {
+    clearInterval(masterTick);
+    masterTick = null;
+  }
+}
+function masterTickFn() {
+  let anyFired = false;
+  state.timers.forEach(t => {
+    if (!t.running) return;
+    const elapsed = (Date.now() - t.startTime) / 1000;
+    const cycles = Math.floor(elapsed / t.interval);
+    if (cycles > t.fired) {
+      t.fired = cycles;
+      fireReminderFor(t);
+      anyFired = true;
+    }
+  });
+  if (anyFired) persist();
+  updateTimerCountdowns();
+}
+
+function startTimerById(id) {
+  const t = state.timers.find(x => x.id === id);
+  if (!t) return;
+  t.running = true;
+  t.fired = 0;
+  t.startTime = Date.now();
+  persist();
+  beep(); // unlock audio context on user gesture
+  ensureMasterTick();
+  renderTimers();
+}
+function stopTimerById(id) {
+  const t = state.timers.find(x => x.id === id);
+  if (!t) return;
+  t.running = false;
+  persist();
+  maybeStopMasterTick();
+  renderTimers();
+}
+
+const ICON_PLAY  = '<svg viewBox="0 0 24 24" fill="currentColor" class="play-icon"><path d="M8 5v14l11-7z"/></svg>';
+const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+function renderTimers() {
+  const list = document.getElementById('timer-list');
+  list.innerHTML = '';
+  if (state.timers.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="title">No timers</div>
+        <div>Tap the + button to add one.</div>
+      </div>`;
+    return;
+  }
+  state.timers.forEach(t => list.appendChild(timerNode(t)));
+}
+
+function timerNode(t) {
+  const el = document.createElement('div');
+  el.className = 'timer-card' + (t.running ? ' running' : '');
+  el.dataset.timerId = t.id;
+  el.innerHTML = `
+    <button class="timer-toggle ${t.running ? 'running' : ''}" data-act="toggle" aria-label="${t.running ? 'Stop' : 'Start'}">
+      ${t.running ? ICON_PAUSE : ICON_PLAY}
+    </button>
+    <div class="timer-card-body" data-act="edit">
+      <div class="timer-card-name">${escapeHtml(t.label || 'Untitled timer')}</div>
+      <div class="timer-card-sub">${subText(t)}</div>
+    </div>
+  `;
+  el.querySelector('[data-act=toggle]').onclick = e => {
+    e.stopPropagation();
+    if (t.running) stopTimerById(t.id); else startTimerById(t.id);
+  };
+  el.querySelector('[data-act=edit]').onclick = () => openTimerSheet(t.id);
+  return el;
+}
+
+function subText(t) {
+  if (t.running) {
+    const elapsed = (Date.now() - t.startTime) / 1000;
+    const remaining = t.interval - (elapsed % t.interval);
+    return `next in ${fmt(remaining)} · ${t.fired} fired`;
+  }
+  return `every ${formatDuration(t.interval)}`;
+}
+
+function updateTimerCountdowns() {
+  state.timers.forEach(t => {
+    if (!t.running) return;
+    const sub = document.querySelector(`[data-timer-id="${t.id}"] .timer-card-sub`);
+    if (sub) sub.textContent = subText(t);
+  });
+}
+
+// Notification toggles (global)
+['sound','vibrate','notify'].forEach(k => {
+  const el = document.getElementById('opt-' + k);
+  el.onclick = () => {
+    if (k === 'notify' && !state.timerSettings.notify) {
+      if (!('Notification' in window)) return;
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') {
+          state.timerSettings.notify = true;
+          el.classList.add('on');
+          persist();
+        }
+        updateNotifStatus();
+      });
+      return;
+    }
+    state.timerSettings[k] = !state.timerSettings[k];
+    el.classList.toggle('on', state.timerSettings[k]);
+    persist();
+  };
+});
+function renderTimerSettings() {
+  ['sound','vibrate','notify'].forEach(k => {
+    document.getElementById('opt-' + k).classList.toggle('on', !!state.timerSettings[k]);
+  });
+  updateNotifStatus();
+}
+
+/* Timer edit sheet */
+let editingTimerId = null;
+let pickedInterval = 30;
+
+function openTimerSheet(id) {
+  editingTimerId = id || null;
+  if (id) {
+    const t = state.timers.find(x => x.id === id);
+    document.getElementById('timer-sheet-title').textContent = 'Edit timer';
+    document.getElementById('timer-name').value = t.label || '';
+    pickedInterval = t.interval;
+    document.getElementById('timer-delete').style.display = 'inline-block';
+  } else {
+    document.getElementById('timer-sheet-title').textContent = 'New timer';
+    document.getElementById('timer-name').value = '';
+    pickedInterval = 30;
+    document.getElementById('timer-delete').style.display = 'none';
+  }
+  document.getElementById('timer-interval-input').value = pickedInterval;
+  refreshTimerPresets();
+  openSheet('sheet-timer');
+  setTimeout(() => document.getElementById('timer-name').focus(), 280);
+}
+
+function refreshTimerPresets() {
+  document.querySelectorAll('#timer-preset-row .preset').forEach(p => {
+    p.classList.toggle('active', +p.dataset.sec === +pickedInterval);
+  });
+}
+
+document.querySelectorAll('#timer-preset-row .preset').forEach(p => {
+  p.onclick = () => {
+    pickedInterval = +p.dataset.sec;
+    document.getElementById('timer-interval-input').value = pickedInterval;
+    refreshTimerPresets();
+  };
+});
+document.getElementById('timer-interval-input').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  if (v >= 1) { pickedInterval = v; refreshTimerPresets(); }
+});
+
+document.getElementById('timer-cancel').onclick = closeSheet;
+document.getElementById('timer-save').onclick = () => {
+  const label = document.getElementById('timer-name').value.trim();
+  const interval = Math.max(1, parseInt(pickedInterval) || 30);
+  if (editingTimerId) {
+    const t = state.timers.find(x => x.id === editingTimerId);
+    const wasRunning = t.running;
+    t.label = label;
+    t.interval = interval;
+    // If interval changed while running, restart cycle so countdown is correct
+    if (wasRunning) { t.startTime = Date.now(); t.fired = 0; }
+  } else {
+    state.timers.push({
+      id: _newId('tm'), label, interval,
+      running: false, fired: 0, startTime: 0
+    });
+  }
+  persist();
+  closeSheet();
+  renderTimers();
+};
+document.getElementById('timer-delete').onclick = () => {
+  if (!editingTimerId) return;
+  if (!confirm('Delete this timer?')) return;
+  state.timers = state.timers.filter(t => t.id !== editingTimerId);
+  persist();
+  closeSheet();
+  maybeStopMasterTick();
+  renderTimers();
+};
+
+/* =========================================================================
+   CALCULATOR
+   ========================================================================= */
+let calcExpr = '';
+let calcResult = '0';
+let justEvaluated = false;
+
+const OPS = ['+','−','×','÷'];
+const isOp = c => OPS.includes(c);
+
+function renderCalc() {
+  document.getElementById('calc-expr').textContent = calcExpr || '\u00A0';
+  document.getElementById('calc-result').textContent = calcResult;
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('calc-history-list');
+  const empty = document.getElementById('calc-history-empty');
+  const head = document.getElementById('calc-history-head');
+  list.innerHTML = '';
+  if (state.calcHistory.length === 0) {
+    empty.style.display = 'block';
+    head.style.display = 'none';
+  } else {
+    empty.style.display = 'none';
+    head.style.display = 'flex';
+    // newest first
+    state.calcHistory.slice().reverse().forEach(h => {
+      const row = document.createElement('div');
+      row.className = 'history-item';
+      row.innerHTML = `<span class="history-expr">${escapeHtml(h.expr)}</span><span class="history-result">${escapeHtml(h.result)}</span>`;
+      row.onclick = () => {
+        calcExpr = h.result;
+        calcResult = h.result;
+        justEvaluated = true;
+        renderCalc();
+      };
+      list.appendChild(row);
+    });
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+}
+
+function evalExpr(expr) {
+  if (!expr) return null;
+  // Convert display ops to JS
+  let s = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/%/g, '/100');
+  // Reject if there's anything not in the allowed set
+  if (!/^[\d+\-*/.()\s]+$/.test(s)) return null;
+  // Avoid trailing operator
+  s = s.replace(/[+\-*/]\s*$/, '');
+  if (!s) return null;
+  try {
+    // eslint-disable-next-line no-new-func
+    const v = Function('"use strict";return (' + s + ')')();
+    if (typeof v !== 'number' || !isFinite(v)) return null;
+    return v;
+  } catch { return null; }
+}
+
+function formatNum(n) {
+  if (n === null || n === undefined) return '0';
+  if (Number.isInteger(n)) return String(n);
+  // Limit to 10 significant digits, strip trailing zeros
+  const fixed = n.toPrecision(12);
+  return parseFloat(fixed).toString();
+}
+
+function liveResult() {
+  const v = evalExpr(calcExpr);
+  calcResult = v === null ? calcResult : formatNum(v);
+}
+
+function calcInput(k) {
+  if (k === 'C') {
+    calcExpr = ''; calcResult = '0'; justEvaluated = false;
+  } else if (k === '⌫') {
+    if (justEvaluated) { calcExpr = ''; calcResult = '0'; justEvaluated = false; }
+    else { calcExpr = calcExpr.slice(0, -1); if (!calcExpr) calcResult = '0'; else liveResult(); }
+  } else if (k === '=') {
+    const v = evalExpr(calcExpr);
+    if (v !== null && calcExpr) {
+      const result = formatNum(v);
+      state.calcHistory.push({ expr: calcExpr, result, at: Date.now() });
+      if (state.calcHistory.length > 50) state.calcHistory.shift();
+      persist();
+      calcExpr = result;
+      calcResult = result;
+      justEvaluated = true;
+    }
+  } else if (k === '±') {
+    // Toggle sign of the last number
+    const m = calcExpr.match(/(-?\d*\.?\d+)$/);
+    if (m) {
+      const n = m[1];
+      const start = m.index;
+      const newN = n.startsWith('-') ? n.slice(1) : '-' + n;
+      // If preceded by an operator, just flip; if at start, wrap
+      const before = calcExpr.slice(0, start);
+      const lastBefore = before.slice(-1);
+      if (before === '' || isOp(lastBefore) || lastBefore === '(') {
+        calcExpr = before + newN;
+      } else {
+        calcExpr = before + (n.startsWith('-') ? '' : '-') + n;
+        if (n.startsWith('-')) calcExpr = before + n.slice(1);
+      }
+      liveResult();
+    }
+  } else if (k === '%') {
+    if (calcExpr && /\d$/.test(calcExpr)) {
+      calcExpr += '%';
+      liveResult();
+    }
+  } else if (k === '.') {
+    if (justEvaluated) { calcExpr = '0.'; calcResult = '0.'; justEvaluated = false; return; }
+    // Only one dot per number segment
+    const tail = calcExpr.split(/[+\-×÷()%]/).pop();
+    if (!tail.includes('.')) {
+      if (!calcExpr || isOp(calcExpr.slice(-1))) calcExpr += '0';
+      calcExpr += '.';
+    }
+  } else if (isOp(k)) {
+    if (justEvaluated) justEvaluated = false;
+    if (!calcExpr && k === '−') { calcExpr = '-'; return; }
+    if (!calcExpr) return;
+    if (isOp(calcExpr.slice(-1))) calcExpr = calcExpr.slice(0, -1) + k;
+    else calcExpr += k;
+  } else { // digit
+    if (justEvaluated) { calcExpr = ''; calcResult = '0'; justEvaluated = false; }
+    if (calcExpr === '0') calcExpr = '';
+    calcExpr += k;
+    liveResult();
+  }
+  renderCalc();
+}
+
+document.getElementById('calc-grid').addEventListener('click', e => {
+  const btn = e.target.closest('.key');
+  if (!btn) return;
+  calcInput(btn.dataset.k);
+});
+
+document.getElementById('clear-history').onclick = () => {
+  state.calcHistory = [];
+  persist();
+  renderHistory();
+};
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  if (document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+  if (!document.getElementById('view-calc').classList.contains('active')) return;
+  const k = e.key;
+  if (/^[0-9.]$/.test(k)) calcInput(k);
+  else if (k === '+') calcInput('+');
+  else if (k === '-') calcInput('−');
+  else if (k === '*') calcInput('×');
+  else if (k === '/') { e.preventDefault(); calcInput('÷'); }
+  else if (k === 'Enter' || k === '=') { e.preventDefault(); calcInput('='); }
+  else if (k === 'Backspace') calcInput('⌫');
+  else if (k === 'Escape') calcInput('C');
+  else if (k === '%') calcInput('%');
+});
+
+/* =========================================================================
+   TASKS
+   ========================================================================= */
+const PRIO_LABELS = { high: 'High', med: 'Medium', low: 'Low', none: 'None' };
+const PRIO_VARS = {
+  high: 'var(--prio-high)',
+  med:  'var(--prio-med)',
+  low:  'var(--prio-low)',
+  none: 'var(--prio-none)'
+};
+
+function uid() { return 't_' + Math.random().toString(36).slice(2, 10); }
+function gid() { return 'g_' + Math.random().toString(36).slice(2, 10); }
+
+function renderGroupBar() {
+  const bar = document.getElementById('group-bar');
+  bar.innerHTML = '';
+  // ensure activeGroup exists
+  if (!state.groups.find(g => g.id === state.activeGroup)) {
+    state.activeGroup = state.groups[0]?.id || 'g_default';
+    if (state.groups.length === 0) {
+      state.groups.push({ id: 'g_default', name: 'Inbox' });
+      state.activeGroup = 'g_default';
+    }
+    persist();
+  }
+  state.groups.forEach(g => {
+    const count = state.tasks.filter(t => t.group === g.id).length;
+    const b = document.createElement('button');
+    b.className = 'group-chip' + (g.id === state.activeGroup ? ' active' : '');
+    b.innerHTML = `${escapeHtml(g.name)} <span class="count">${count}</span>`;
+    b.onclick = () => { state.activeGroup = g.id; persist(); renderGroupBar(); renderTasks(); };
+    bar.appendChild(b);
+  });
+  const add = document.createElement('button');
+  add.className = 'group-chip add';
+  add.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Groups`;
+  add.onclick = openGroupSheet;
+  bar.appendChild(add);
+}
+
+function renderTasks() {
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  const items = state.tasks.filter(t => t.group === state.activeGroup);
+  if (items.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="title">Nothing here yet</div>
+        <div>Tap the + button to add a task.</div>
+      </div>`;
+    return;
+  }
+  items.forEach(t => list.appendChild(taskNode(t)));
+  attachDragHandlers(list);
+}
+
+function taskNode(t) {
+  const el = document.createElement('div');
+  el.className = 'task-item';
+  el.dataset.id = t.id;
+  el.innerHTML = `
+    <div class="task-check ${t.done ? 'done' : ''}" data-act="check">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <span class="prio-dot" style="--prio: ${PRIO_VARS[t.prio || 'none']}"></span>
+    <div class="task-body" data-act="edit">
+      <div class="task-name ${t.done ? 'done' : ''}">${escapeHtml(t.name)}</div>
+      ${t.desc ? `<div class="task-desc">${escapeHtml(t.desc)}</div>` : ''}
+    </div>
+    <div class="drag-handle" data-act="drag" aria-label="Drag to reorder">
+      <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+    </div>
+  `;
+  el.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'check') {
+      t.done = !t.done;
+      persist();
+      renderTasks();
+    } else if (act === 'edit') {
+      openTaskSheet(t.id);
+    }
+  });
+  return el;
+}
+
+/* ---------- Drag and drop ---------- */
+function attachDragHandlers(container) {
+  container.querySelectorAll('.drag-handle').forEach(handle => {
+    handle.onpointerdown = e => beginDrag(e, container, handle);
+  });
+}
+
+function beginDrag(e, container, handle) {
+  e.preventDefault();
+  const task = handle.closest('.task-item');
+  if (!task) return;
+  const items = Array.from(container.querySelectorAll('.task-item'));
+  const startIdx = items.indexOf(task);
+
+  const rect = task.getBoundingClientRect();
+  const startY = e.clientY;
+  task.style.position = 'relative';
+  task.classList.add('dragging');
+  task.style.width = rect.width + 'px';
+  handle.setPointerCapture(e.pointerId);
+
+  // pre-collect other items positions
+  let lastSwapY = e.clientY;
+
+  function onMove(ev) {
+    const dy = ev.clientY - startY;
+    task.style.transform = `translateY(${dy}px)`;
+
+    const taskRect = task.getBoundingClientRect();
+    const dragCenter = taskRect.top + taskRect.height / 2;
+
+    const siblings = Array.from(container.querySelectorAll('.task-item:not(.dragging)'));
+    for (const s of siblings) {
+      const r = s.getBoundingClientRect();
+      const sc = r.top + r.height / 2;
+      if (dragCenter < sc && dragCenter > r.top) {
+        // move before s
+        container.insertBefore(task, s);
+        rebase(); return;
+      } else if (dragCenter > sc && dragCenter < r.bottom) {
+        container.insertBefore(task, s.nextSibling);
+        rebase(); return;
+      }
+    }
+  }
+  function rebase() {
+    // After DOM reorder, reset transform & startY so further movement is smooth
+    const newRect = task.getBoundingClientRect();
+    // shift by difference to keep finger position
+    const delta = newRect.top - rect.top;
+    // Reset transform reference
+    task.style.transform = `translateY(0px)`;
+    // adjust startY so subsequent dy is relative to new position
+    // Actually simpler: snap back to no-transform; user finger now aligns with new spot
+  }
+
+  function onUp(ev) {
+    task.classList.remove('dragging');
+    task.style.transform = '';
+    task.style.width = '';
+    task.style.position = '';
+    handle.releasePointerCapture(e.pointerId);
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+
+    // Persist new order
+    const newOrder = Array.from(container.querySelectorAll('.task-item')).map(el => el.dataset.id);
+    // Reorder state.tasks: take all tasks in current group in newOrder, others stay
+    const inGroup = state.tasks.filter(t => t.group === state.activeGroup);
+    const outGroup = state.tasks.filter(t => t.group !== state.activeGroup);
+    const reordered = newOrder.map(id => inGroup.find(t => t.id === id)).filter(Boolean);
+    state.tasks = [...outGroup, ...reordered];
+    persist();
+  }
+
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+}
+
+/* ---------- Task sheet (add/edit) ---------- */
+let editingTaskId = null;
+let pickedPrio = 'none';
+
+function openTaskSheet(id) {
+  editingTaskId = id || null;
+  const sel = document.getElementById('task-group');
+  sel.innerHTML = '';
+  state.groups.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g.id; o.textContent = g.name;
+    sel.appendChild(o);
+  });
+
+  if (id) {
+    const t = state.tasks.find(x => x.id === id);
+    document.getElementById('task-sheet-title').textContent = 'Edit task';
+    document.getElementById('task-name').value = t.name;
+    document.getElementById('task-desc').value = t.desc || '';
+    pickedPrio = t.prio || 'none';
+    sel.value = t.group;
+    document.getElementById('task-delete').style.display = 'inline-block';
+  } else {
+    document.getElementById('task-sheet-title').textContent = 'New task';
+    document.getElementById('task-name').value = '';
+    document.getElementById('task-desc').value = '';
+    pickedPrio = 'none';
+    sel.value = state.activeGroup;
+    document.getElementById('task-delete').style.display = 'none';
+  }
+  renderPrioPicker();
+  openSheet('sheet-task');
+  setTimeout(() => document.getElementById('task-name').focus(), 280);
+}
+
+function renderPrioPicker() {
+  document.querySelectorAll('.prio-option').forEach(o => {
+    o.classList.toggle('active', o.dataset.prio === pickedPrio);
+  });
+}
+
+document.querySelectorAll('.prio-option').forEach(o => {
+  o.onclick = () => { pickedPrio = o.dataset.prio; renderPrioPicker(); };
+});
+
+document.getElementById('task-cancel').onclick = () => closeSheet();
+document.getElementById('task-save').onclick = () => {
+  const name = document.getElementById('task-name').value.trim();
+  if (!name) return;
+  const desc = document.getElementById('task-desc').value.trim();
+  const group = document.getElementById('task-group').value;
+  if (editingTaskId) {
+    const t = state.tasks.find(x => x.id === editingTaskId);
+    t.name = name; t.desc = desc; t.prio = pickedPrio; t.group = group;
+  } else {
+    state.tasks.push({ id: uid(), name, desc, prio: pickedPrio, group, done: false, created: Date.now() });
+  }
+  persist();
+  closeSheet();
+  state.activeGroup = group;
+  persist();
+  renderGroupBar();
+  renderTasks();
+};
+document.getElementById('task-delete').onclick = () => {
+  if (!editingTaskId) return;
+  state.tasks = state.tasks.filter(t => t.id !== editingTaskId);
+  persist();
+  closeSheet();
+  renderGroupBar();
+  renderTasks();
+};
+
+/* ---------- Group sheet ---------- */
+function openGroupSheet() {
+  renderGroupList();
+  openSheet('sheet-group');
+}
+function renderGroupList() {
+  const list = document.getElementById('group-list');
+  list.innerHTML = '';
+  state.groups.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'group-list-row';
+    const taskCount = state.tasks.filter(t => t.group === g.id).length;
+    row.innerHTML = `
+      <input class="input" value="${escapeHtml(g.name)}" data-id="${g.id}">
+      <button data-act="delete" data-id="${g.id}" title="Delete group">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>
+      </button>
+    `;
+    row.querySelector('input').oninput = e => {
+      g.name = e.target.value;
+      persist();
+    };
+    row.querySelector('[data-act=delete]').onclick = () => {
+      if (state.groups.length === 1) { alert('You need at least one group.'); return; }
+      if (taskCount > 0 && !confirm(`Delete "${g.name}" and its ${taskCount} task(s)?`)) return;
+      state.tasks = state.tasks.filter(t => t.group !== g.id);
+      state.groups = state.groups.filter(x => x.id !== g.id);
+      if (state.activeGroup === g.id) state.activeGroup = state.groups[0].id;
+      persist();
+      renderGroupList();
+      renderGroupBar();
+      renderTasks();
+    };
+    list.appendChild(row);
+  });
+}
+document.getElementById('add-group').onclick = () => {
+  const inp = document.getElementById('new-group-name');
+  const name = inp.value.trim();
+  if (!name) return;
+  state.groups.push({ id: gid(), name });
+  persist();
+  inp.value = '';
+  renderGroupList();
+  renderGroupBar();
+};
+document.getElementById('group-done').onclick = closeSheet;
+
+/* ---------- Sheet machinery ---------- */
+function openSheet(id) {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById(id).classList.add('open');
+  document.getElementById('scrim').classList.add('open');
+}
+function closeSheet() {
+  document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+  document.getElementById('scrim').classList.remove('open');
+}
+document.getElementById('scrim').onclick = closeSheet;
+
+/* FAB */
+document.getElementById('fab').onclick = () => {
+  const active = document.querySelector('.view.active')?.id;
+  if (active === 'view-timer') openTimerSheet(null);
+  else if (active === 'view-notes') openNoteSheet(null);
+  else if (active === 'view-vehicles') openVehicleSheet(null);
+  else openTaskSheet(null);
+};
+
+/* =========================================================================
+   VEHICLES
+   ========================================================================= */
+function vid() { return 'v_' + Math.random().toString(36).slice(2, 10); }
+
+function renderVehicles() {
+  const list = document.getElementById('vehicle-list');
+  list.innerHTML = '';
+  if (state.vehicles.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="title">No vehicles yet</div>
+        <div>Tap the + button to add one.</div>
+      </div>`;
+    return;
+  }
+  state.vehicles.forEach(v => list.appendChild(vehicleNode(v)));
+}
+
+function vehicleNode(v) {
+  const el = document.createElement('div');
+  el.className = 'vehicle-item';
+  const meta = [];
+  if (v.mavid)   meta.push(`<span><em>MAV</em>${escapeHtml(v.mavid)}</span>`);
+  if (v.board)   meta.push(`<span><em>Board</em>${escapeHtml(v.board)}</span>`);
+  if (v.video)   meta.push(`<span><em>Video</em>${escapeHtml(v.video)}</span>`);
+  if (v.marshal) meta.push(`<span><em>Marshal</em>${escapeHtml(v.marshal)}s</span>`);
+  if (v.alt)     meta.push(`<span><em>Alt</em>${escapeHtml(v.alt)}m</span>`);
+  el.innerHTML = `
+    <div class="vehicle-glyph">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="2.5"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+        <path d="M6.5 6.5 10 10M17.5 6.5 14 10M6.5 17.5 10 14M17.5 17.5 14 14"/>
+      </svg>
+    </div>
+    <div class="vehicle-body">
+      <div class="vehicle-name">${escapeHtml(v.name || 'Unnamed')}</div>
+      <div class="vehicle-meta">${meta.join('') || '<span style="opacity:0.6">No details</span>'}</div>
+    </div>
+  `;
+  el.onclick = () => openVehicleSheet(v.id);
+  return el;
+}
+
+let editingVehicleId = null;
+
+function openVehicleSheet(id) {
+  editingVehicleId = id || null;
+  const fields = ['name', 'mavid', 'board', 'video', 'marshal', 'alt'];
+  if (id) {
+    const v = state.vehicles.find(x => x.id === id);
+    document.getElementById('vehicle-sheet-title').textContent = 'Edit vehicle';
+    fields.forEach(f => { document.getElementById('vehicle-' + f).value = v[f] || ''; });
+    document.getElementById('vehicle-delete').style.display = 'inline-block';
+  } else {
+    document.getElementById('vehicle-sheet-title').textContent = 'New vehicle';
+    fields.forEach(f => { document.getElementById('vehicle-' + f).value = ''; });
+    document.getElementById('vehicle-delete').style.display = 'none';
+  }
+  openSheet('sheet-vehicle');
+  setTimeout(() => document.getElementById('vehicle-name').focus(), 280);
+}
+
+document.getElementById('vehicle-cancel').onclick = closeSheet;
+document.getElementById('vehicle-save').onclick = () => {
+  const name    = document.getElementById('vehicle-name').value.trim();
+  const mavid   = document.getElementById('vehicle-mavid').value.trim();
+  const board   = document.getElementById('vehicle-board').value.trim();
+  const video   = document.getElementById('vehicle-video').value.trim();
+  const marshal = document.getElementById('vehicle-marshal').value.trim();
+  const alt     = document.getElementById('vehicle-alt').value.trim();
+  if (!name && !mavid && !board && !video && !marshal && !alt) return;
+  if (editingVehicleId) {
+    const v = state.vehicles.find(x => x.id === editingVehicleId);
+    Object.assign(v, { name, mavid, board, video, marshal, alt });
+  } else {
+    state.vehicles.push({ id: vid(), name, mavid, board, video, marshal, alt, created: Date.now() });
+  }
+  persist();
+  closeSheet();
+  renderVehicles();
+};
+document.getElementById('vehicle-delete').onclick = () => {
+  if (!editingVehicleId) return;
+  if (!confirm('Delete this vehicle?')) return;
+  state.vehicles = state.vehicles.filter(v => v.id !== editingVehicleId);
+  persist();
+  closeSheet();
+  renderVehicles();
+};
+
+/* =========================================================================
+   NOTES
+   ========================================================================= */
+function renderNotes() {
+  const list = document.getElementById('note-list');
+  list.innerHTML = '';
+  if (state.notes.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="title">No notes yet</div>
+        <div>Tap the + button to add one.</div>
+      </div>`;
+    return;
+  }
+  // Newest first
+  state.notes.slice().sort((a,b) => (b.updated||b.created||0) - (a.updated||a.created||0))
+    .forEach(n => list.appendChild(noteNode(n)));
+}
+
+function noteNode(n) {
+  const el = document.createElement('div');
+  el.className = 'note-item';
+  const d = new Date(n.updated || n.created || Date.now());
+  const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  el.innerHTML = `
+    <div class="note-heading">${escapeHtml(n.heading || 'Untitled')}</div>
+    ${n.desc ? `<div class="note-desc">${escapeHtml(n.desc)}</div>` : ''}
+    <div class="note-date">${dateStr}</div>
+  `;
+  el.onclick = () => openNoteSheet(n.id);
+  return el;
+}
+
+let editingNoteId = null;
+
+function openNoteSheet(id) {
+  editingNoteId = id || null;
+  if (id) {
+    const n = state.notes.find(x => x.id === id);
+    document.getElementById('note-sheet-title').textContent = 'Edit note';
+    document.getElementById('note-heading').value = n.heading || '';
+    document.getElementById('note-desc').value = n.desc || '';
+    document.getElementById('note-delete').style.display = 'inline-block';
+  } else {
+    document.getElementById('note-sheet-title').textContent = 'New note';
+    document.getElementById('note-heading').value = '';
+    document.getElementById('note-desc').value = '';
+    document.getElementById('note-delete').style.display = 'none';
+  }
+  openSheet('sheet-note');
+  setTimeout(() => document.getElementById('note-heading').focus(), 280);
+}
+
+document.getElementById('note-cancel').onclick = closeSheet;
+document.getElementById('note-save').onclick = () => {
+  const heading = document.getElementById('note-heading').value.trim();
+  const desc    = document.getElementById('note-desc').value.trim();
+  if (!heading && !desc) return;
+  const now = Date.now();
+  if (editingNoteId) {
+    const n = state.notes.find(x => x.id === editingNoteId);
+    n.heading = heading; n.desc = desc; n.updated = now;
+  } else {
+    state.notes.push({ id: _newId('n'), heading, desc, created: now, updated: now });
+  }
+  persist();
+  closeSheet();
+  renderNotes();
+};
+document.getElementById('note-delete').onclick = () => {
+  if (!editingNoteId) return;
+  if (!confirm('Delete this note?')) return;
+  state.notes = state.notes.filter(n => n.id !== editingNoteId);
+  persist();
+  closeSheet();
+  renderNotes();
+};
+
+/* =========================================================================
+   SETTINGS · EXPORT / IMPORT
+   ========================================================================= */
+document.getElementById('settings-btn').onclick = () => openSheet('sheet-settings');
+document.getElementById('settings-done').onclick = closeSheet;
+
+function exportData() {
+  // Stop any running timer state in exported snapshot (clean import)
+  const cleanTimers = state.timers.map(t => ({
+    id: t.id, label: t.label, interval: t.interval
+  }));
+  const payload = {
+    app: 'Trio',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    timers: cleanTimers,
+    timerSettings: state.timerSettings,
+    groups: state.groups,
+    activeGroup: state.activeGroup,
+    tasks: state.tasks,
+    vehicles: state.vehicles,
+    notes: state.notes,
+    calcHistory: state.calcHistory
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  a.download = `trio-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 200);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    let data;
+    try { data = JSON.parse(e.target.result); }
+    catch { alert('Could not parse file — is it valid JSON?'); return; }
+    if (!data || typeof data !== 'object' || data.app !== 'Trio') {
+      alert('Not a Trio backup file.');
+      return;
+    }
+    if (!confirm('Replace all current data with this backup? This cannot be undone.')) return;
+
+    // Stop everything currently running
+    state.timers.forEach(t => { t.running = false; });
+    maybeStopMasterTick();
+
+    if (Array.isArray(data.timers)) {
+      state.timers = data.timers.map(t => ({
+        id: t.id || _newId('tm'),
+        label: t.label || '',
+        interval: Math.max(1, +t.interval || 30),
+        running: false, fired: 0, startTime: 0
+      }));
+    }
+    if (data.timerSettings && typeof data.timerSettings === 'object') {
+      state.timerSettings = {
+        sound:   !!data.timerSettings.sound,
+        vibrate: !!data.timerSettings.vibrate,
+        notify:  !!data.timerSettings.notify,
+      };
+    }
+    if (Array.isArray(data.groups) && data.groups.length) state.groups = data.groups;
+    if (typeof data.activeGroup === 'string') state.activeGroup = data.activeGroup;
+    if (Array.isArray(data.tasks)) state.tasks = data.tasks;
+    if (Array.isArray(data.vehicles)) state.vehicles = data.vehicles;
+    if (Array.isArray(data.notes)) state.notes = data.notes;
+    if (Array.isArray(data.calcHistory)) state.calcHistory = data.calcHistory;
+
+    persist();
+    renderTimers();
+    renderTimerSettings();
+    renderGroupBar();
+    renderTasks();
+    renderVehicles();
+    renderNotes();
+    renderCalc();
+    closeSheet();
+    alert('Imported successfully.');
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('export-btn').onclick = exportData;
+document.getElementById('import-btn').onclick = () => document.getElementById('import-file').click();
+document.getElementById('import-file').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0];
+  if (f) importData(f);
+  e.target.value = ''; // reset for re-import
+});
+
+/* =========================================================================
+   ALTITUDE CALCULATOR
+   ========================================================================= */
+const altTelem = document.getElementById('alt-telemetry');
+const altTarget = document.getElementById('alt-target');
+const altResultNum = document.getElementById('alt-result-num');
+const altResultUnit = document.getElementById('alt-result-unit');
+
+// Restore last-used values (small convenience, not persisted as state object)
+altTelem.value  = LS.get('trio.altTelem',  '') || '';
+altTarget.value = LS.get('trio.altTarget', '') || '';
+
+function computeAltitude() {
+  const t = parseFloat(altTelem.value);
+  const g = parseFloat(altTarget.value);
+  if (!isFinite(t) || !isFinite(g)) {
+    altResultNum.textContent = '—';
+    altResultUnit.textContent = '';
+    return;
+  }
+  const mission = g + t;
+  // Format: up to 2 decimals, drop trailing zeros
+  const rounded = Math.round(mission * 100) / 100;
+  altResultNum.textContent = (rounded > 0 ? '+' : '') + rounded;
+  altResultUnit.textContent = 'm';
+  altResultNum.style.color = rounded < 0 ? 'var(--danger)' : '';
+}
+
+[altTelem, altTarget].forEach(el => {
+  el.addEventListener('input', () => {
+    LS.set('trio.altTelem',  altTelem.value);
+    LS.set('trio.altTarget', altTarget.value);
+    computeAltitude();
+  });
+});
+computeAltitude();
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+applyTheme();
+renderTimers();
+renderTimerSettings();
+renderCalc();
+renderGroupBar();
+renderTasks();
+renderVehicles();
+renderNotes();
+
+// Wake lock when timer running (best effort, only on supporting browsers)
+let wakeLock = null;
+async function reqWake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch {} }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.timers.some(t => t.running)) reqWake();
+});
+
+// Prevent pull-to-refresh on iOS Safari
+document.body.addEventListener('touchmove', e => {
+  if (e.target.closest('main') || e.target.closest('.sheet')) return;
+  e.preventDefault();
+}, { passive: false });
+
+</script>
+</body>
+</html>
