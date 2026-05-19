@@ -2078,6 +2078,9 @@ function taskNode(t) {
 }
 
 /* ---------- Drag and drop ---------- */
+const DRAG_ACTIVATION_PX = 8;       // distance finger must move before drag actually starts
+const DRAG_ANIM = 'transform 0.18s cubic-bezier(0.2, 0, 0.2, 1)';
+
 function attachDragHandlers(container) {
   container.querySelectorAll('.drag-handle').forEach(handle => {
     handle.onpointerdown = e => beginDrag(e, container, handle);
@@ -2085,72 +2088,135 @@ function attachDragHandlers(container) {
 }
 
 function beginDrag(e, container, handle) {
-  e.preventDefault();
+  // Only respond to primary button / touch / pen
+  if (e.button !== undefined && e.button !== 0) return;
+
   const task = handle.closest('.task-item');
   if (!task) return;
-  const items = Array.from(container.querySelectorAll('.task-item'));
+
+  e.preventDefault();
+
+  // Snapshot the layout at drag start. The DOM does NOT change during drag —
+  // we just shift siblings visually via transform. The actual reorder is
+  // committed once on drop. This avoids the mid-drag jumpiness of the old code.
+  const items = Array.from(container.children).filter(c => c.classList.contains('task-item'));
   const startIdx = items.indexOf(task);
+  if (startIdx < 0) return;
 
-  const rect = task.getBoundingClientRect();
+  const itemRects = items.map(el => el.getBoundingClientRect());
+  const itemCenters = itemRects.map(r => r.top + r.height / 2);
+  const startRect = itemRects[startIdx];
+
+  // Gap between cards (so siblings shift by the right amount to make room)
+  let gap = 8;
+  if (items.length > 1) {
+    gap = Math.max(0, itemRects[1].top - itemRects[0].bottom);
+  }
+  const shift = startRect.height + gap;
+
+  const startX = e.clientX;
   const startY = e.clientY;
-  task.style.position = 'relative';
-  task.classList.add('dragging');
-  task.style.width = rect.width + 'px';
-  handle.setPointerCapture(e.pointerId);
+  let activated = false;
+  let currentIdx = startIdx;
+  let pointerId = e.pointerId;
 
-  // pre-collect other items positions
-  let lastSwapY = e.clientY;
+  try { handle.setPointerCapture(pointerId); } catch {}
+
+  function activate() {
+    activated = true;
+    task.classList.add('dragging');
+    task.style.width = startRect.width + 'px';
+    task.style.zIndex = '100';
+    // Disable transitions on the dragged element so it tracks the finger 1:1
+    task.style.transition = 'none';
+  }
+
+  function applyVisualOrder(newIdx) {
+    if (newIdx === currentIdx) return;
+    items.forEach((el, i) => {
+      if (el === task) return;
+      let offset = 0;
+      if (newIdx > startIdx && i > startIdx && i <= newIdx) offset = -shift;
+      else if (newIdx < startIdx && i >= newIdx && i < startIdx) offset = shift;
+      el.style.transition = DRAG_ANIM;
+      el.style.transform = offset ? `translateY(${offset}px)` : '';
+    });
+    currentIdx = newIdx;
+  }
 
   function onMove(ev) {
+    const dx = ev.clientX - startX;
     const dy = ev.clientY - startY;
+
+    if (!activated) {
+      // Reject small movements — most likely finger noise on a tap.
+      if (Math.hypot(dx, dy) < DRAG_ACTIVATION_PX) return;
+      activate();
+    }
+
+    // The dragged element follows the finger exactly.
     task.style.transform = `translateY(${dy}px)`;
 
-    const taskRect = task.getBoundingClientRect();
-    const dragCenter = taskRect.top + taskRect.height / 2;
+    // Where is the center of the dragged item right now?
+    const dragCenter = startRect.top + startRect.height / 2 + dy;
 
-    const siblings = Array.from(container.querySelectorAll('.task-item:not(.dragging)'));
-    for (const s of siblings) {
-      const r = s.getBoundingClientRect();
-      const sc = r.top + r.height / 2;
-      if (dragCenter < sc && dragCenter > r.top) {
-        // move before s
-        container.insertBefore(task, s);
-        rebase(); return;
-      } else if (dragCenter > sc && dragCenter < r.bottom) {
-        container.insertBefore(task, s.nextSibling);
-        rebase(); return;
+    // Find target index. Walk outward from startIdx; stop at the first
+    // sibling whose center the drag hasn't passed. This gives natural
+    // hysteresis: a sibling only "yields" once the drag is clearly past
+    // its center, and only "reclaims" once the drag pulls back past it.
+    let newIdx = startIdx;
+    if (dy > 0) {
+      for (let i = startIdx + 1; i < items.length; i++) {
+        if (dragCenter > itemCenters[i]) newIdx = i;
+        else break;
+      }
+    } else if (dy < 0) {
+      for (let i = startIdx - 1; i >= 0; i--) {
+        if (dragCenter < itemCenters[i]) newIdx = i;
+        else break;
       }
     }
-  }
-  function rebase() {
-    // After DOM reorder, reset transform & startY so further movement is smooth
-    const newRect = task.getBoundingClientRect();
-    // shift by difference to keep finger position
-    const delta = newRect.top - rect.top;
-    // Reset transform reference
-    task.style.transform = `translateY(0px)`;
-    // adjust startY so subsequent dy is relative to new position
-    // Actually simpler: snap back to no-transform; user finger now aligns with new spot
+    applyVisualOrder(newIdx);
   }
 
-  function onUp(ev) {
-    task.classList.remove('dragging');
-    task.style.transform = '';
-    task.style.width = '';
-    task.style.position = '';
-    handle.releasePointerCapture(e.pointerId);
+  function cleanup() {
     document.removeEventListener('pointermove', onMove);
     document.removeEventListener('pointerup', onUp);
     document.removeEventListener('pointercancel', onUp);
+    try { handle.releasePointerCapture(pointerId); } catch {}
+  }
 
-    // Persist new order
-    const newOrder = Array.from(container.querySelectorAll('.task-item')).map(el => el.dataset.id);
-    // Reorder state.tasks: take all tasks in current group in newOrder, others stay
-    const inGroup = state.tasks.filter(t => t.group === state.activeGroup);
-    const outGroup = state.tasks.filter(t => t.group !== state.activeGroup);
-    const reordered = newOrder.map(id => inGroup.find(t => t.id === id)).filter(Boolean);
-    state.tasks = [...outGroup, ...reordered];
-    persist();
+  function onUp() {
+    if (!activated) {
+      // Was just a tap on the handle — nothing to do.
+      cleanup();
+      return;
+    }
+
+    // Reset all transient styles
+    items.forEach(el => { el.style.transition = ''; el.style.transform = ''; });
+    task.classList.remove('dragging');
+    task.style.width = '';
+    task.style.zIndex = '';
+    task.style.transition = '';
+
+    if (currentIdx !== startIdx) {
+      // Commit the new order to the DOM
+      const reorderedNodes = items.slice();
+      const moved = reorderedNodes.splice(startIdx, 1)[0];
+      reorderedNodes.splice(currentIdx, 0, moved);
+      reorderedNodes.forEach(el => container.appendChild(el));
+
+      // And to the state — only within the active group
+      const newIds = reorderedNodes.map(el => el.dataset.id);
+      const inGroup  = state.tasks.filter(t => t.group === state.activeGroup);
+      const outGroup = state.tasks.filter(t => t.group !== state.activeGroup);
+      const reordered = newIds.map(id => inGroup.find(t => t.id === id)).filter(Boolean);
+      state.tasks = [...outGroup, ...reordered];
+      persist();
+    }
+
+    cleanup();
   }
 
   document.addEventListener('pointermove', onMove);
